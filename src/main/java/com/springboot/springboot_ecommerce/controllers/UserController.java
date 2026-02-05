@@ -35,6 +35,7 @@ public class UserController {
         Map<String, Object> response = new HashMap<>();
 
         // ---------- ID VALIDATION ----------
+        
         if (user.getId() != null) {
             response.put("status", HttpStatus.BAD_REQUEST.value());
             response.put("message", "ID should not be provided");
@@ -42,6 +43,7 @@ public class UserController {
         }
 
         // ---------- NAME VALIDATION ----------
+
         if (user.getName() == null || user.getName().trim().isEmpty()) {
             response.put("status", HttpStatus.BAD_REQUEST.value());
             response.put("message", "Name is required");
@@ -55,6 +57,7 @@ public class UserController {
         }
 
         // ---------- EMAIL VALIDATION ----------
+
         if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
             response.put("status", HttpStatus.BAD_REQUEST.value());
             response.put("message", "Email is required");
@@ -70,6 +73,7 @@ public class UserController {
         }
 
         // ---------- PASSWORD VALIDATION ----------
+
         if (user.getPassword() == null || user.getPassword().isEmpty()) {
             response.put("status", HttpStatus.BAD_REQUEST.value());
             response.put("message", "Password is required");
@@ -83,6 +87,7 @@ public class UserController {
         }
 
         // ---------- ROLE VALIDATION ----------
+
         List<String> allowedRoles = List.of(
                 "super_admin", "admin", "customer", "seller",
                 "delivery", "support", "manager", "finance", "guest");
@@ -100,14 +105,17 @@ public class UserController {
         }
 
         // ---------- STATUS VALIDATION ----------
+
         if (user.getStatus() != null && !"ACTIVE".equalsIgnoreCase(user.getStatus())) {
             response.put("status", HttpStatus.BAD_REQUEST.value());
             response.put("message", "Status can only be ACTIVE");
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
+
         // If status is null → @PrePersist sets INACTIVE
 
         // ---------- UNIQUE NAME CHECK ----------
+
         if (userRepository.existsByName(user.getName())) {
             response.put("status", HttpStatus.CONFLICT.value());
             response.put("message", "User name already exists");
@@ -115,6 +123,7 @@ public class UserController {
         }
 
         // ---------- UNIQUE EMAIL CHECK ----------
+
         if (userRepository.existsByEmail(user.getEmail())) {
             response.put("status", HttpStatus.CONFLICT.value());
             response.put("message", "User email already exists");
@@ -122,6 +131,7 @@ public class UserController {
         }
 
         // ---------- SAVE USER ----------
+
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         UserEntity savedUser = userRepository.save(user);
 
@@ -176,6 +186,7 @@ public class UserController {
                     boolean isUpdated = false;
 
                     // Update name only if provided AND changed
+
                     if (userDetails.getName() != null &&
                             !userDetails.getName().equals(user.getName())) {
                         user.setName(userDetails.getName());
@@ -183,6 +194,7 @@ public class UserController {
                     }
 
                     // Update email only if provided AND changed
+
                     if (userDetails.getEmail() != null &&
                             !userDetails.getEmail().equals(user.getEmail())) {
                         user.setEmail(userDetails.getEmail());
@@ -192,6 +204,7 @@ public class UserController {
                     Map<String, Object> response = new HashMap<>();
 
                     // Nothing changed
+
                     if (!isUpdated) {
                         response.put("status", HttpStatus.OK.value());
                         response.put("message", "Nothing is updated");
@@ -199,6 +212,7 @@ public class UserController {
                     }
 
                     // Save only if something changed
+
                     UserEntity updatedUser = userRepository.save(user);
 
                     response.put("status", HttpStatus.OK.value());

@@ -34,32 +34,42 @@ public class UserController {
 
         Map<String, Object> response = new HashMap<>();
 
-        // ---------- ID VALIDATION ----------
-        
+        // ---------- ID ----------
         if (user.getId() != null) {
-            response.put("status", HttpStatus.BAD_REQUEST.value());
+            response.put("status", 400);
             response.put("message", "ID should not be provided");
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
 
-        // ---------- NAME VALIDATION ----------
-
+        // ---------- NAME ----------
         if (user.getName() == null || user.getName().trim().isEmpty()) {
-            response.put("status", HttpStatus.BAD_REQUEST.value());
+            response.put("status", 400);
             response.put("message", "Name is required");
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
 
         if (user.getName().length() < 3 || user.getName().length() > 20) {
-            response.put("status", HttpStatus.BAD_REQUEST.value());
+            response.put("status", 400);
             response.put("message", "Name must be between 3 and 20 characters");
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
 
-        // ---------- EMAIL VALIDATION ----------
+        // ---------- USERNAME ----------
+        if (user.getUserName() == null || user.getUserName().trim().isEmpty()) {
+            response.put("status", 400);
+            response.put("message", "Username is required");
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        }
 
+        if (userRepository.existsByUserName(user.getUserName())) {
+            response.put("status", 409);
+            response.put("message", "Username already exists");
+            return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+        }
+
+        // ---------- EMAIL ----------
         if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
-            response.put("status", HttpStatus.BAD_REQUEST.value());
+            response.put("status", 400);
             response.put("message", "Email is required");
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
@@ -67,75 +77,74 @@ public class UserController {
         String emailRegex = "^[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}$";
 
         if (!user.getEmail().matches(emailRegex)) {
-            response.put("status", HttpStatus.BAD_REQUEST.value());
-            response.put("message", "Invalid email format (example@gmail.com)");
+            response.put("status", 400);
+            response.put("message", "Invalid email format");
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
 
-        // ---------- PASSWORD VALIDATION ----------
+        if (userRepository.existsByEmail(user.getEmail())) {
+            response.put("status", 409);
+            response.put("message", "Email already exists");
+            return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+        }
 
+        // ---------- PHONE ----------
+        if (user.getPhoneNumber() == null || user.getPhoneNumber().trim().isEmpty()) {
+            response.put("status", 400);
+            response.put("message", "Phone number is required");
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        }
+
+        String phoneRegex = "^[0-9]{10}$";
+
+        if (!user.getPhoneNumber().matches(phoneRegex)) {
+            response.put("status", 400);
+            response.put("message", "Phone number must be exactly 10 digits");
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        }
+
+        if (userRepository.existsByPhoneNumber(user.getPhoneNumber())) {
+            response.put("status", 409);
+            response.put("message", "Phone number already exists");
+            return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+        }
+
+        // ---------- PASSWORD ----------
         if (user.getPassword() == null || user.getPassword().isEmpty()) {
-            response.put("status", HttpStatus.BAD_REQUEST.value());
+            response.put("status", 400);
             response.put("message", "Password is required");
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
 
         if (user.getPassword().length() < 7 || user.getPassword().length() > 15) {
-            response.put("status", HttpStatus.BAD_REQUEST.value());
+            response.put("status", 400);
             response.put("message", "Password must be between 7 and 15 characters");
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
 
-        // ---------- ROLE VALIDATION ----------
-
+        // ---------- ROLE ----------
         List<String> allowedRoles = List.of(
                 "super_admin", "admin", "customer", "seller",
                 "delivery", "support", "manager", "finance", "guest");
 
-        if (user.getRole() == null || user.getRole().trim().isEmpty()) {
-            response.put("status", HttpStatus.BAD_REQUEST.value());
-            response.put("message", "Role is required");
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-        }
-
-        if (!allowedRoles.contains(user.getRole())) {
-            response.put("status", HttpStatus.BAD_REQUEST.value());
+        if (user.getRole() == null || !allowedRoles.contains(user.getRole())) {
+            response.put("status", 400);
             response.put("message", "Invalid role");
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
 
-        // ---------- STATUS VALIDATION ----------
-
+        // ---------- STATUS ----------
         if (user.getStatus() != null && !"ACTIVE".equalsIgnoreCase(user.getStatus())) {
-            response.put("status", HttpStatus.BAD_REQUEST.value());
+            response.put("status", 400);
             response.put("message", "Status can only be ACTIVE");
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
 
-        // If status is null → @PrePersist sets INACTIVE
-
-        // ---------- UNIQUE NAME CHECK ----------
-
-        if (userRepository.existsByName(user.getName())) {
-            response.put("status", HttpStatus.CONFLICT.value());
-            response.put("message", "User name already exists");
-            return new ResponseEntity<>(response, HttpStatus.CONFLICT);
-        }
-
-        // ---------- UNIQUE EMAIL CHECK ----------
-
-        if (userRepository.existsByEmail(user.getEmail())) {
-            response.put("status", HttpStatus.CONFLICT.value());
-            response.put("message", "User email already exists");
-            return new ResponseEntity<>(response, HttpStatus.CONFLICT);
-        }
-
-        // ---------- SAVE USER ----------
-
+        // ---------- SAVE ----------
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         UserEntity savedUser = userRepository.save(user);
 
-        response.put("status", HttpStatus.CREATED.value());
+        response.put("status", 201);
         response.put("message", "User created successfully");
         response.put("data", savedUser);
 
@@ -174,7 +183,6 @@ public class UserController {
     }
 
     // UPDATE USER
-
     @PutMapping("/update/{id}")
     public ResponseEntity<Map<String, Object>> updateUser(
             @PathVariable Long id,
@@ -184,35 +192,91 @@ public class UserController {
                 .map(user -> {
 
                     boolean isUpdated = false;
+                    Map<String, Object> response = new HashMap<>();
 
-                    // Update name only if provided AND changed
-
+                    // ---------- NAME ----------
                     if (userDetails.getName() != null &&
                             !userDetails.getName().equals(user.getName())) {
                         user.setName(userDetails.getName());
                         isUpdated = true;
                     }
 
-                    // Update email only if provided AND changed
+                    // ---------- USERNAME ----------
+                    if (userDetails.getUserName() != null &&
+                            !userDetails.getUserName().equals(user.getUserName())) {
 
+                        // check unique
+                        if (userRepository.existsByUserName(userDetails.getUserName())) {
+                            response.put("status", HttpStatus.CONFLICT.value());
+                            response.put("message", "Username already exists");
+                            return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+                        }
+
+                        user.setUserName(userDetails.getUserName());
+                        isUpdated = true;
+                    }
+
+                    // ---------- EMAIL ----------
                     if (userDetails.getEmail() != null &&
                             !userDetails.getEmail().equals(user.getEmail())) {
+
+                        // check unique
+                        if (userRepository.existsByEmail(userDetails.getEmail())) {
+                            response.put("status", HttpStatus.CONFLICT.value());
+                            response.put("message", "Email already exists");
+                            return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+                        }
+
                         user.setEmail(userDetails.getEmail());
                         isUpdated = true;
                     }
 
-                    Map<String, Object> response = new HashMap<>();
+                    // ---------- PHONE NUMBER ----------
+                    if (userDetails.getPhoneNumber() != null &&
+                            !userDetails.getPhoneNumber().equals(user.getPhoneNumber())) {
 
-                    // Nothing changed
+                        String phoneRegex = "^[0-9]{10}$";
 
+                        if (!userDetails.getPhoneNumber().matches(phoneRegex)) {
+                            response.put("status", HttpStatus.BAD_REQUEST.value());
+                            response.put("message", "Phone number must be exactly 10 digits");
+                            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                        }
+
+                        if (userRepository.existsByPhoneNumber(userDetails.getPhoneNumber())) {
+                            response.put("status", HttpStatus.CONFLICT.value());
+                            response.put("message", "Phone number already exists");
+                            return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+                        }
+
+                        user.setPhoneNumber(userDetails.getPhoneNumber());
+                        isUpdated = true;
+                    }
+
+                    // ---------- STATUS ----------
+                    if (userDetails.getStatus() != null &&
+                            !userDetails.getStatus().equalsIgnoreCase(user.getStatus())) {
+
+                        String newStatus = userDetails.getStatus().toUpperCase();
+
+                        if (!newStatus.equals("ACTIVE") && !newStatus.equals("INACTIVE")) {
+                            response.put("status", HttpStatus.BAD_REQUEST.value());
+                            response.put("message", "Status must be ACTIVE or INACTIVE");
+                            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                        }
+
+                        user.setStatus(newStatus);
+                        isUpdated = true;
+                    }
+
+                    // ---------- NOTHING UPDATED ----------
                     if (!isUpdated) {
                         response.put("status", HttpStatus.OK.value());
                         response.put("message", "Nothing is updated");
                         return ResponseEntity.ok(response);
                     }
 
-                    // Save only if something changed
-
+                    // ---------- SAVE ----------
                     UserEntity updatedUser = userRepository.save(user);
 
                     response.put("status", HttpStatus.OK.value());
@@ -231,24 +295,35 @@ public class UserController {
     }
 
     // DELETE USER
-
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<Map<String, Object>> deleteUser(@PathVariable Long id) {
 
-        if (!userRepository.existsById(id)) {
-            Map<String, Object> response = new HashMap<>();
+        Map<String, Object> response = new HashMap<>();
+
+        UserEntity user = userRepository.findById(id)
+                .orElse(null);
+
+        if (user == null) {
             response.put("status", HttpStatus.NOT_FOUND.value());
             response.put("message", "User not found");
             return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
         }
 
-        userRepository.deleteById(id);
+        // already deleted check (professional)
+        if (user.getDeletedAt() != null) {
+            response.put("status", HttpStatus.BAD_REQUEST.value());
+            response.put("message", "User already deleted");
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        }
 
-        Map<String, Object> response = new HashMap<>();
+        // soft delete
+        user.setDeletedAt(java.time.LocalDateTime.now());
+        userRepository.save(user);
+
         response.put("status", HttpStatus.OK.value());
         response.put("message", "User deleted successfully");
 
         return ResponseEntity.ok(response);
-
     }
+
 }

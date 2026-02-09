@@ -1,5 +1,6 @@
 package com.springboot.springboot_ecommerce.entity;
 
+import java.time.LocalDateTime;
 import jakarta.persistence.*;
 
 @Entity
@@ -10,34 +11,50 @@ public class UserEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // display name
+    @Column(nullable = false)
     private String name;
+
+    // login username
+    @Column(name = "user_name", unique = true, nullable = false)
+    private String userName;
 
     @Column(unique = true, nullable = false)
     private String email;
 
+    @Column(name = "phone_number", nullable = false, unique = true, length = 10)
+    private String phoneNumber;
+
     @Column(nullable = false)
     private String password;
 
-    // 🔑 Token (NULL on create)
+    // 🔑 Token
     @Column(length = 500)
     private String token;
 
     @Column(nullable = false)
     private String role;
 
-    // ✅ Default status
+    // ACTIVE / INACTIVE
     @Column(nullable = false)
     private String status;
 
+    private LocalDateTime createdAt;
+    private LocalDateTime deletedAt;
+
     // ===============================
-    // JPA LIFECYCLE CALLBACK
+    // SINGLE CALLBACK
     // ===============================
     @PrePersist
-    public void prePersist() {
-        // token should be NULL when user is created
+    public void beforeSave() {
+
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
+        }
+
+        // token default
         this.token = null;
 
-        // default status
         if (this.status == null) {
             this.status = "INACTIVE";
         }
@@ -47,12 +64,15 @@ public class UserEntity {
     public UserEntity() {
     }
 
-    public UserEntity(Long id, String name, String email, String password, String role) {
+    public UserEntity(Long id, String name, String userName, String email,
+            String password, String role, String phoneNumber) {
         this.id = id;
         this.name = name;
+        this.userName = userName;
         this.email = email;
         this.password = password;
         this.role = role;
+        this.phoneNumber = phoneNumber;
     }
 
     // ===== Getters & Setters =====
@@ -69,6 +89,14 @@ public class UserEntity {
         this.name = name;
     }
 
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
     public String getEmail() {
         return email;
     }
@@ -77,16 +105,23 @@ public class UserEntity {
         this.email = email;
     }
 
-    // ⚠️ password must be ENCODED before save
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
     public String getPassword() {
         return password;
     }
 
+    // encode in service
     public void setPassword(String password) {
         this.password = password;
     }
 
-    // token handled internally (login)
     public String getToken() {
         return token;
     }
@@ -99,7 +134,6 @@ public class UserEntity {
         return role;
     }
 
-    // default role can be set from service/controller
     public void setRole(String role) {
         this.role = role;
     }
@@ -108,8 +142,19 @@ public class UserEntity {
         return status;
     }
 
-    // allow manual status change (ADMIN use-case)
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
     }
 }

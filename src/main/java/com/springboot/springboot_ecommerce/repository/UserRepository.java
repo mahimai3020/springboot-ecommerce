@@ -1,5 +1,7 @@
 package com.springboot.springboot_ecommerce.repository;
 
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -10,5 +12,16 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
     boolean existsByEmail(String email);
 
-    boolean existsByName(String name);
+    boolean existsByUserName(String userName);
+
+    boolean existsByPhoneNumber(String phoneNumber);
+
+    Optional<UserEntity> findByEmail(String email);
+
+    Optional<UserEntity> findByName(String name);
+
+    Optional<UserEntity> findByPhoneNumber(String phoneNumber);
+
+    Optional<UserEntity> findByUserName(String name);
+
 }

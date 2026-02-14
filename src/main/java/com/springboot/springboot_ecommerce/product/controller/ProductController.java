@@ -1,8 +1,9 @@
 package com.springboot.springboot_ecommerce.product.controller;
 
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,17 +19,19 @@ import com.springboot.springboot_ecommerce.product.service.ProductService;
 import com.springboot.springboot_ecommerce.user.entity.UserEntity;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/products")
+@RequiredArgsConstructor
 public class ProductController {
 
-    @Autowired
-    private ProductService service;
+    private final ProductService service;
 
     // ================= CREATE =================
-    @PostMapping("/add")
-    public ApiResponse<Product> create(@Valid @RequestBody ProductRequest request,
+    @PostMapping
+    public ApiResponse<Product> create(
+            @Valid @RequestBody ProductRequest request,
             @AuthenticationPrincipal UserEntity user) {
 
         return service.createProduct(request, user);
@@ -36,26 +39,33 @@ public class ProductController {
 
     // ================= GET ALL =================
     @GetMapping
-    public ApiResponse<List<ProductResponse>> getAllProducts(
+    public ApiResponse<Map<String, Object>> getAll(
             @AuthenticationPrincipal UserEntity user,
             @RequestParam(required = false) Long id,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) Long seller,
             @RequestParam(required = false) Double rating,
-            @RequestParam(required = false) String createdByName) {
+            @RequestParam(required = false) String createdByName,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size) {
 
-        List<ProductResponse> products = service.getAllProducts(user, id, name, category, seller, rating,
-                createdByName);
+        Page<ProductResponse> productPage = service.getAllProducts(
+                user, id, name, category, seller, rating, createdByName, page, size);
 
-        return new ApiResponse<>(
-                200,
-                "Products fetched successfully",
-                products);
+        Map<String, Object> response = new HashMap<>();
+        response.put("content", productPage.getContent());
+        response.put("page", productPage.getNumber());
+        response.put("size", productPage.getSize());
+        response.put("totalElements", productPage.getTotalElements());
+        response.put("totalPages", productPage.getTotalPages());
+        response.put("last", productPage.isLast());
+
+        return new ApiResponse<>(200, "Products fetched successfully", response);
     }
 
     // ================= UPDATE =================
-    @PutMapping("/update/{id}")
+    @PutMapping("/{id}")
     public ApiResponse<ProductResponse> update(
             @PathVariable Long id,
             @RequestBody ProductUpdateRequest request,
@@ -64,12 +74,13 @@ public class ProductController {
         ProductResponse product = service.updateProduct(id, request, user);
 
         if (product == null) {
-            return new ApiResponse<>(200, "Nothing updated", null);
+            return new ApiResponse<>(404, "Product not found or not updated", null);
         }
 
         return new ApiResponse<>(200, "Product updated successfully", product);
     }
 
+    // ================= UPLOAD IMAGE =================
     @PostMapping("/{productId}/images")
     public ApiResponse<ProductImage> upload(
             @PathVariable Long productId,
@@ -79,7 +90,8 @@ public class ProductController {
         return service.uploadImage(productId, file, user);
     }
 
-    @PostMapping("/review/{productId}")
+    // ================= REVIEW =================
+    @PostMapping("/{productId}/reviews")
     public ApiResponse<Product> review(
             @PathVariable Long productId,
             @RequestBody ProductReviewRequest request,
@@ -89,13 +101,12 @@ public class ProductController {
     }
 
     // ================= DELETE =================
-    @DeleteMapping("/delete/{id}")
+    @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(
             @PathVariable Long id,
             @AuthenticationPrincipal UserEntity user) {
 
         service.deleteProduct(id, user);
-
         return new ApiResponse<>(200, "Product deleted successfully", null);
     }
 }

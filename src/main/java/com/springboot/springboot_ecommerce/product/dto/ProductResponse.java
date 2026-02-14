@@ -16,24 +16,15 @@ public class ProductResponse {
     private double price;
     private int stock;
     private String category;
-
     private Long seller;
-
     private double rating;
     private int numOfReviews;
-
     private Long createdBy;
     private String createdByName;
-
     private Long updatedBy;
     private String updatedByName;
-
-    private Long deletedBy;
-    private String deletedByName;
-
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
-    // ⭐ keep only once
     private List<ProductImageResponse> images;
 }
+

@@ -1,71 +1,47 @@
 package com.springboot.springboot_ecommerce.product.service;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.*;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.springboot.springboot_ecommerce.common.ApiResponse;
-import com.springboot.springboot_ecommerce.product.dto.ProductImageResponse;
-import com.springboot.springboot_ecommerce.product.dto.ProductRequest;
-import com.springboot.springboot_ecommerce.product.dto.ProductResponse;
-import com.springboot.springboot_ecommerce.product.dto.ProductReviewRequest;
-import com.springboot.springboot_ecommerce.product.dto.ProductUpdateRequest;
-import com.springboot.springboot_ecommerce.product.entity.Product;
-import com.springboot.springboot_ecommerce.product.entity.ProductImage;
-import com.springboot.springboot_ecommerce.product.entity.ProductReview;
-import com.springboot.springboot_ecommerce.product.repository.ProductImageRepository;
-import com.springboot.springboot_ecommerce.product.repository.ProductRepository;
-import com.springboot.springboot_ecommerce.product.repository.ProductReviewRepository;
+import com.springboot.springboot_ecommerce.product.dto.*;
+import com.springboot.springboot_ecommerce.product.entity.*;
+import com.springboot.springboot_ecommerce.product.repository.*;
 import com.springboot.springboot_ecommerce.user.entity.UserEntity;
 import com.springboot.springboot_ecommerce.user.exception.ApiException;
 
+import jakarta.persistence.criteria.Predicate;
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class ProductService {
 
-    @Autowired
-    private ProductRepository repo;
-
-    @Autowired
-    private ProductReviewRepository reviewRepo;
-
-    @Autowired
-    private ProductImageRepository imageRepo;
+    private final ProductRepository repo;
+    private final ProductReviewRepository reviewRepo;
+    private final ProductImageRepository imageRepo;
 
     // ================= CREATE =================
     public ApiResponse<Product> createProduct(ProductRequest request, UserEntity user) {
 
-        // ⭐ authentication check
-        if (user == null) {
-            return new ApiResponse<>(401, "Invalid or missing token", null);
-        }
+        validateUser(user);
+        validateCreatePermission(user);
 
-        String role = user.getRole();
-
-        // ⭐ authorization check
-        if (!"seller".equalsIgnoreCase(role) &&
-                !"admin".equalsIgnoreCase(role) &&
-                !"super_admin".equalsIgnoreCase(role)) {
-
-            return new ApiResponse<>(403, "You are not allowed to create product", null);
-        }
-
-        // ⭐ extra safety (DTO should handle, but double check)
-        if (request.getName() == null || request.getName().isBlank()) {
-            return new ApiResponse<>(400, "Product name is required", null);
-        }
-
-        if (request.getPrice() < 0) {
+        if (request.getPrice() < 0)
             return new ApiResponse<>(400, "Price cannot be negative", null);
-        }
 
-        if (request.getStock() < 0) {
+        if (request.getStock() < 0)
             return new ApiResponse<>(400, "Stock cannot be negative", null);
-        }
 
         Product product = new Product();
         product.setName(request.getName());
@@ -73,39 +49,64 @@ public class ProductService {
         product.setPrice(request.getPrice());
         product.setStock(request.getStock());
         product.setCategory(request.getCategory());
-
-        // ⭐ seller snapshot from JWT
         product.setSeller(user.getId());
+        product.setCreatedBy(user.getId());
         product.setCreatedByName(user.getName());
 
-        Product saved = repo.save(product);
-
-        return new ApiResponse<>(201, "Product created successfully", saved);
+        return new ApiResponse<>(201, "Product created", repo.save(product));
     }
 
-    // ================= GET ALL WITH FILTER =================
-    public List<ProductResponse> getAllProducts(UserEntity user,
+    // ================= GET ALL =================
+    public Page<ProductResponse> getAllProducts(
+            UserEntity user,
             Long id,
             String name,
             String category,
             Long seller,
             Double rating,
-            String createdByName) {
+            String createdByName,
+            int page,
+            int size) {
 
-        validateUser(user); // only token validation
+        validateUser(user);
 
-        return repo.findAll()
-                .stream()
-                .filter(p -> !p.isDeleted())
-                .filter(p -> id == null || p.getId().equals(id))
-                .filter(p -> name == null || p.getName().toLowerCase().contains(name.toLowerCase()))
-                .filter(p -> category == null || p.getCategory().equalsIgnoreCase(category))
-                .filter(p -> seller == null || p.getSeller().equals(seller))
-                .filter(p -> rating == null || p.getRating() >= rating)
-                .filter(p -> createdByName == null ||
-                        p.getCreatedByName().toLowerCase().contains(createdByName.toLowerCase()))
-                .map(this::mapToResponse)
-                .toList();
+        // prevent invalid inputs
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), 50);
+
+        // ⭐ ASC ORDER (small → big)
+        Pageable pageable = PageRequest.of(safePage, safeSize, Sort.by("id").ascending());
+
+        Specification<Product> spec = (root, query, cb) -> {
+
+            List<Predicate> p = new ArrayList<>();
+
+            p.add(cb.isFalse(root.get("deleted")));
+
+            if (id != null)
+                p.add(cb.equal(root.get("id"), id));
+
+            if (name != null && !name.isBlank())
+                p.add(cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%"));
+
+            if (category != null && !category.isBlank())
+                p.add(cb.equal(cb.lower(root.get("category")), category.toLowerCase()));
+
+            if (seller != null)
+                p.add(cb.equal(root.get("seller"), seller));
+
+            if (rating != null)
+                p.add(cb.greaterThanOrEqualTo(root.get("rating"), rating));
+
+            if (createdByName != null && !createdByName.isBlank())
+                p.add(cb.like(cb.lower(root.get("createdByName")),
+                        "%" + createdByName.toLowerCase() + "%"));
+
+            return cb.and(p.toArray(new Predicate[0]));
+        };
+
+        return repo.findAll(spec, pageable)
+                .map(this::mapToResponse);
     }
 
     // ================= UPDATE =================
@@ -116,71 +117,58 @@ public class ProductService {
         validateUser(user);
 
         Product product = repo.findById(productId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Product not found"));
+                .orElseThrow(() -> new ApiException(null, "Product not found"));
 
-        if (product.isDeleted()) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Product already deleted");
-        }
+        if (product.isDeleted())
+            throw new ApiException(null, "Product already deleted");
 
         validateUpdatePermission(user, product);
 
         boolean updated = false;
 
-        if (request.getName() != null && !request.getName().equals(product.getName())) {
+        if (request.getName() != null) {
             product.setName(request.getName());
             updated = true;
         }
-
-        if (request.getDescription() != null &&
-                !request.getDescription().equals(product.getDescription())) {
+        if (request.getDescription() != null) {
             product.setDescription(request.getDescription());
             updated = true;
         }
-
-        if (request.getPrice() != null && request.getPrice() != product.getPrice()) {
+        if (request.getPrice() != null) {
             product.setPrice(request.getPrice());
             updated = true;
         }
-
-        if (request.getStock() != null && request.getStock() != product.getStock()) {
+        if (request.getStock() != null) {
             product.setStock(request.getStock());
             updated = true;
         }
-
-        if (request.getCategory() != null &&
-                !request.getCategory().equals(product.getCategory())) {
+        if (request.getCategory() != null) {
             product.setCategory(request.getCategory());
             updated = true;
         }
 
-        if (!updated) {
-            return null; // controller → "Nothing updated"
-        }
+        if (!updated)
+            return null;
 
         product.setUpdatedBy(user.getId());
         product.setUpdatedByName(user.getUserName());
 
-        Product saved = repo.save(product);
-
-        return mapToResponse(saved);
+        return mapToResponse(repo.save(product));
     }
 
-    // ================= DELETE (SOFT) =================
+    // ================= DELETE =================
     public void deleteProduct(Long productId, UserEntity user) {
 
         validateUser(user);
 
-        if (!(user.getRole().equals("admin") ||
-                user.getRole().equals("super_admin"))) {
-            throw new AccessDeniedException("You are not allowed to delete product");
-        }
+        if (!List.of("admin", "super_admin").contains(user.getRole()))
+            throw new AccessDeniedException("You are not allowed");
 
         Product product = repo.findById(productId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Product not found"));
+                .orElseThrow(() -> new ApiException(null, "Product not found"));
 
-        if (product.isDeleted()) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Product already deleted");
-        }
+        if (product.isDeleted())
+            throw new ApiException(null, "Already deleted");
 
         product.setDeleted(true);
         product.setDeletedAt(LocalDateTime.now());
@@ -190,198 +178,123 @@ public class ProductService {
         repo.save(product);
     }
 
-    // ================= PERMISSION =================
-    private void validateCreatePermission(UserEntity user) {
-
-        if (user == null || user.getRole() == null) {
-            throw new AccessDeniedException("Please login again");
-        }
-        validateCreatePermission(user);
-
-        String role = user.getRole().toLowerCase();
-
-        if (!role.equals("seller") &&
-                !role.equals("admin") &&
-                !role.equals("super_admin")) {
-
-            throw new AccessDeniedException("You are not allowed to create product");
-        }
-    }
-
-    private void validateUpdatePermission(UserEntity user, Product product) {
-
-        String role = user.getRole();
-
-        if (role.equals("super_admin") || role.equals("admin")) {
-            return;
-        }
-
-        if (role.equals("seller")) {
-            if (!product.getCreatedBy().equals(user.getId())) {
-                throw new AccessDeniedException("You can update only your products");
-            }
-            return;
-        }
-
-        throw new AccessDeniedException("You are not allowed to update product");
-    }
-
+    // ================= REVIEW =================
     public ApiResponse<Product> addReview(Long productId,
             ProductReviewRequest request,
             UserEntity user) {
 
-        if (user == null) {
-            return new ApiResponse<>(401, "Invalid or missing token", null);
-        }
+        validateUser(user);
 
-        if (!"customer".equalsIgnoreCase(user.getRole())) {
+        if (!"customer".equalsIgnoreCase(user.getRole()))
             return new ApiResponse<>(403, "Only customers can review", null);
-        }
 
-        // ⭐ use repo (not productRepo)
         Product product = repo.findById(productId).orElse(null);
-
-        if (product == null) {
+        if (product == null)
             return new ApiResponse<>(404, "Product not found", null);
-        }
 
         ProductReview review = new ProductReview();
         review.setRating(request.getRating());
         review.setComment(request.getComment());
-
+        review.setProduct(product);
         review.setCreatedBy(user.getId());
         review.setCreatedByName(user.getName());
-        review.setCreatedByEmail(user.getEmail());
-        review.setCreatedByContact(user.getPhoneNumber());
-
-        review.setProduct(product);
 
         reviewRepo.save(review);
 
-        double totalRating = product.getRating() * product.getNumOfReviews() + request.getRating();
+        double total = product.getRating() * product.getNumOfReviews() + request.getRating();
+        int count = product.getNumOfReviews() + 1;
 
-        int newCount = product.getNumOfReviews() + 1;
+        product.setNumOfReviews(count);
+        product.setRating(total / count);
 
-        double newAverage = totalRating / newCount;
+        repo.save(product);
 
-        product.setRating(newAverage);
-        product.setNumOfReviews(newCount);
-
-        repo.save(product); // ⭐ fix
-
-        return new ApiResponse<>(200, "Review added successfully", product);
+        return new ApiResponse<>(200, "Review added", product);
     }
 
-    // ================= COMMON =================
-    private void validateUser(UserEntity user) {
-        if (user == null) {
-            throw new AccessDeniedException("Please login again");
-        }
-    }
-
+    // ================= IMAGE =================
     public ApiResponse<ProductImage> uploadImage(Long productId,
             MultipartFile file,
             UserEntity user) {
 
-        // ================= AUTH =================
-        if (user == null) {
-            return new ApiResponse<>(401, "Invalid or missing token", null);
-        }
+        validateUser(user);
 
         Product product = repo.findById(productId).orElse(null);
-
-        if (product == null) {
+        if (product == null)
             return new ApiResponse<>(404, "Product not found", null);
-        }
 
-        // ================= PERMISSION =================
-        String role = user.getRole();
-
-        if ("seller".equalsIgnoreCase(role)) {
-
-            // seller can upload only to his product
-            if (!product.getSeller().equals(user.getId())) {
-                return new ApiResponse<>(403,
-                        "You can upload images only for your product",
-                        null);
-            }
-
-        } else if ("admin".equalsIgnoreCase(role) ||
-                "super_admin".equalsIgnoreCase(role)) {
-            // allowed
-        } else {
-            return new ApiResponse<>(403, "You are not allowed", null);
-        }
+        if ("seller".equalsIgnoreCase(user.getRole())
+                && !product.getSeller().equals(user.getId()))
+            return new ApiResponse<>(403, "Not your product", null);
 
         try {
-            // ================= NAME =================
-            String slug = product.getName()
-                    .toLowerCase()
-                    .replaceAll("[^a-z0-9]", "-");
+            String folder = "uploads/products/" + productId + "/";
+            Files.createDirectories(Paths.get(folder));
 
-            int count = product.getImages() == null ? 0 : product.getImages().size();
-            int next = count + 1;
+            String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+            Path path = Paths.get(folder + fileName);
+            Files.write(path, file.getBytes());
 
-            String original = file.getOriginalFilename();
-            String ext = original.substring(original.lastIndexOf('.'));
-
-            String fileName = slug + "-" + product.getId() + "-" + next + ext;
-
-            // ================= STORAGE =================
-            String folder = "uploads/products/" + product.getId() + "/";
-            java.nio.file.Path path = java.nio.file.Paths.get(folder + fileName);
-
-            java.nio.file.Files.createDirectories(path.getParent());
-            java.nio.file.Files.write(path, file.getBytes());
-
-            // ================= URL =================
-            String imageUrl = "http://localhost:8080/" + folder + fileName;
-
-            // ================= SAVE =================
             ProductImage image = new ProductImage();
-            image.setUrl(imageUrl);
+            image.setUrl("http://localhost:8080/" + folder + fileName);
             image.setProduct(product);
 
-            imageRepo.save(image);
-
-            return new ApiResponse<>(200, "Image uploaded successfully", image);
+            return new ApiResponse<>(200, "Uploaded", imageRepo.save(image));
 
         } catch (Exception e) {
             return new ApiResponse<>(500, "Upload failed", null);
         }
     }
 
-   private ProductResponse mapToResponse(Product product) {
-
-    List<ProductImageResponse> images = null;
-
-    if (product.getImages() != null) {
-        images = product.getImages().stream()
-                .map(img -> new ProductImageResponse(
-                        img.getId(),
-                        img.getUrl()))
-                .toList();
+    // ================= COMMON =================
+    private void validateUser(UserEntity user) {
+        if (user == null)
+            throw new AccessDeniedException("Please login again");
     }
 
-    return ProductResponse.builder()
-            .id(product.getId())
-            .name(product.getName())
-            .description(product.getDescription())
-            .price(product.getPrice())
-            .stock(product.getStock())
-            .category(product.getCategory())
-            .seller(product.getSeller())
-            .rating(product.getRating())
-            .numOfReviews(product.getNumOfReviews())
-            .createdBy(product.getCreatedBy())
-            .createdByName(product.getCreatedByName())
-            .updatedBy(product.getUpdatedBy())
-            .updatedByName(product.getUpdatedByName())
-            .deletedBy(product.getDeletedBy())
-            .deletedByName(product.getDeletedByName())
-            .createdAt(product.getCreatedAt())
-            .updatedAt(product.getUpdatedAt())
-            .images(images)   // ⭐ here
-            .build();
-}
+    private void validateCreatePermission(UserEntity user) {
+        String role = user.getRole().toLowerCase();
+        if (!role.equals("seller") && !role.equals("admin") && !role.equals("super_admin"))
+            throw new AccessDeniedException("You are not allowed");
+    }
+
+    private void validateUpdatePermission(UserEntity user, Product product) {
+
+        String role = user.getRole();
+
+        if ("admin".equals(role) || "super_admin".equals(role))
+            return;
+
+        if ("seller".equals(role) && product.getSeller().equals(user.getId()))
+            return;
+
+        throw new AccessDeniedException("You cannot update this product");
+    }
+
+    private ProductResponse mapToResponse(Product p) {
+
+        List<ProductImageResponse> images = p.getImages() == null ? null
+                : p.getImages().stream()
+                        .map(i -> new ProductImageResponse(i.getId(), i.getUrl()))
+                        .toList();
+
+        return ProductResponse.builder()
+                .id(p.getId())
+                .name(p.getName())
+                .description(p.getDescription())
+                .price(p.getPrice())
+                .stock(p.getStock())
+                .category(p.getCategory())
+                .seller(p.getSeller())
+                .rating(p.getRating())
+                .numOfReviews(p.getNumOfReviews())
+                .createdBy(p.getCreatedBy())
+                .createdByName(p.getCreatedByName())
+                .updatedBy(p.getUpdatedBy())
+                .updatedByName(p.getUpdatedByName())
+                .createdAt(p.getCreatedAt())
+                .updatedAt(p.getUpdatedAt())
+                .images(images)
+                .build();
+    }
 }

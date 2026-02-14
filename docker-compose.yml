@@ -1,0 +1,39 @@
+version: "4.0.2"
+
+services:
+  springboot_ecommerce_db:
+    image: mysql:8.0
+    container_name: ecommerce_db
+    restart: always
+    ports:
+      - "3306:3306"
+    env_file:
+      - .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASS}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASS}
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  springboot_ecommerce-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ecommerce_app
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - springboot_ecommerce_db
+    env_file:
+      - .env
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:mysql://springboot_ecommerce_db:3306/${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+
+volumes:
+  mysql_data:

@@ -6,7 +6,6 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class ProductImageResponse {
-
     private Long id;
     private String url;
 }

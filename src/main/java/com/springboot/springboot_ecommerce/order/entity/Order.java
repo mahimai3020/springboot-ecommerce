@@ -1,15 +1,12 @@
 package com.springboot.springboot_ecommerce.order.entity;
 
+import jakarta.persistence.*;
+import lombok.Data;
+
 import java.time.LocalDateTime;
 
-import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-
+@Data
 @Entity
-@Table(name = "orders")
-@Getter
-@Setter
 public class Order {
 
     @Id
@@ -19,28 +16,17 @@ public class Order {
     private Long userId;
     private Long cartId;
 
-    private Long productId;
-    private String productName;
-
-    private Long sellerId;
-    private String sellerName;
-
-    private int quantity;
-    private double price;
     private double totalAmount;
 
-    private String status; // CREATED, SHIPPED, DELIVERED
+    private String status;
+    private String paymentStatus;
+    private String deliveryStatus;
+    private String paymentMethod;
 
-    // ✅ DELIVERY FIELDS (ADD THESE)
     private Long deliveryManId;
     private String deliveryManName;
     private String deliveryManContact;
-    private String deliveryStatus; // ASSIGNED, PICKED, DELIVERED
 
-    // payment
-    private String paymentMethod; // UPI, CARD, COD
-    private String paymentStatus; // PENDING, SUCCESS, FAILED
     private String transactionId;
     private LocalDateTime paidAt;
-
 }

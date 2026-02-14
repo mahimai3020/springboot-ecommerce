@@ -1,15 +1,10 @@
 package com.springboot.springboot_ecommerce.cart.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
+@Data
 @Entity
-@Table(name = "cart_items")
-@Getter
-@Setter
 public class CartItem {
 
     @Id
@@ -17,14 +12,12 @@ public class CartItem {
     private Long id;
 
     private Long productId;
-    private int quantity;
+    private Integer quantity;
 
-    // ⭐ seller snapshot
     private Long sellerId;
     private String sellerName;
 
-    @JsonIgnore
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "cart_id")
     private Cart cart;
 }

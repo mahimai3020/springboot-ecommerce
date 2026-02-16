@@ -1,11 +1,16 @@
 package com.springboot.springboot_ecommerce.product.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Data
 @Entity
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class ProductReview {
+
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

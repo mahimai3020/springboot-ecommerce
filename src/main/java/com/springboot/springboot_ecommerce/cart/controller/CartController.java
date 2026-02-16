@@ -1,8 +1,5 @@
 package com.springboot.springboot_ecommerce.cart.controller;
 
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,26 +8,30 @@ import com.springboot.springboot_ecommerce.cart.entity.Cart;
 import com.springboot.springboot_ecommerce.cart.entity.CartItem;
 import com.springboot.springboot_ecommerce.cart.service.CartService;
 import com.springboot.springboot_ecommerce.common.ApiResponse;
-import com.springboot.springboot_ecommerce.order.entity.Order;
 import com.springboot.springboot_ecommerce.user.entity.UserEntity;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/cart")
 public class CartController {
 
-    @Autowired
-    private CartService service;
+    private final CartService service;
+
+    public CartController(CartService service) {
+        this.service = service;
+    }
 
     // ================= ADD TO CART =================
     @PostMapping("/add")
     public ApiResponse<CartItem> addToCart(
             @AuthenticationPrincipal UserEntity user,
-            @RequestBody CartAddRequest request) {
+            @Valid @RequestBody CartAddRequest request) {
 
         return service.addToCart(user, request);
     }
 
-    // ================= GET CART BY ID =================
+    // ================= GET CART =================
     @GetMapping("/{cartId}")
     public ApiResponse<Cart> getCart(
             @PathVariable Long cartId,
@@ -46,17 +47,5 @@ public class CartController {
             @AuthenticationPrincipal UserEntity user) {
 
         return service.cancelCart(cartId, user);
-    }
-
-    // ================= SEARCH ORDERS (ADMIN) =================
-    @GetMapping("/orders/search")
-    public ApiResponse<List<Order>> searchOrders(
-            @RequestParam(required = false) Long cartId,
-            @RequestParam(required = false) Long productId,
-            @RequestParam(required = false) Long sellerId,
-            @RequestParam(required = false) String productName,
-            @AuthenticationPrincipal UserEntity user) {
-
-        return service.searchOrders(cartId, productId, sellerId, productName, user);
     }
 }

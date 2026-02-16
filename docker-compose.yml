@@ -1,39 +1,38 @@
-version: "4.0.2"
-
 services:
-  springboot_ecommerce_db:
-    image: mysql:8.0
+  db:
+    image: mysql:8
     container_name: ecommerce_db
     restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ecommerce
+      MYSQL_USER: app
+      MYSQL_PASSWORD: app
     ports:
       - "3306:3306"
-    env_file:
-      - .env
-    environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASS}
-      MYSQL_DATABASE: ${DB_NAME}
-      MYSQL_USER: ${DB_USER}
-      MYSQL_PASSWORD: ${DB_PASS}
     volumes:
       - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
-  springboot_ecommerce-backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
+  app:
+    build: .
     container_name: ecommerce_app
     restart: always
     ports:
       - "8080:8080"
     depends_on:
-      - springboot_ecommerce_db
-    env_file:
-      - .env
+      db:
+        condition: service_healthy
     environment:
-      SPRING_PROFILES_ACTIVE: prod
-      DB_URL: jdbc:mysql://springboot_ecommerce_db:3306/${DB_NAME}
-      DB_USER: ${DB_USER}
-      DB_PASS: ${DB_PASS}
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/ecommerce?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: app
+      SPRING_DATASOURCE_PASSWORD: app
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "true"
 
 volumes:
   mysql_data:

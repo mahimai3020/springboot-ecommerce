@@ -68,13 +68,13 @@ public class ProductController {
     @PutMapping("/{id}")
     public ApiResponse<ProductResponse> update(
             @PathVariable Long id,
-            @RequestBody ProductUpdateRequest request,
+            @Valid @RequestBody ProductUpdateRequest request,
             @AuthenticationPrincipal UserEntity user) {
 
         ProductResponse product = service.updateProduct(id, request, user);
 
         if (product == null) {
-            return new ApiResponse<>(404, "Product not found or not updated", null);
+            return new ApiResponse<>(404, "Product not found or access denied", null);
         }
 
         return new ApiResponse<>(200, "Product updated successfully", product);
@@ -87,6 +87,10 @@ public class ProductController {
             @RequestParam("file") MultipartFile file,
             @AuthenticationPrincipal UserEntity user) {
 
+        if (file == null || file.isEmpty()) {
+            return new ApiResponse<>(400, "File is required", null);
+        }
+
         return service.uploadImage(productId, file, user);
     }
 
@@ -94,7 +98,7 @@ public class ProductController {
     @PostMapping("/{productId}/reviews")
     public ApiResponse<Product> review(
             @PathVariable Long productId,
-            @RequestBody ProductReviewRequest request,
+            @Valid @RequestBody ProductReviewRequest request,
             @AuthenticationPrincipal UserEntity user) {
 
         return service.addReview(productId, request, user);

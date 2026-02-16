@@ -1,10 +1,14 @@
 package com.springboot.springboot_ecommerce.cart.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Data
 @Entity
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class CartItem {
 
     @Id

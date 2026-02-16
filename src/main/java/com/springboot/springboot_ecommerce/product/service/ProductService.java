@@ -11,6 +11,7 @@ import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.springboot.springboot_ecommerce.common.ApiResponse;
@@ -32,6 +33,7 @@ public class ProductService {
     private final ProductImageRepository imageRepo;
 
     // ================= CREATE =================
+    @Transactional
     public ApiResponse<Product> createProduct(ProductRequest request, UserEntity user) {
 
         validateUser(user);
@@ -70,17 +72,14 @@ public class ProductService {
 
         validateUser(user);
 
-        // prevent invalid inputs
         int safePage = Math.max(page, 0);
         int safeSize = Math.min(Math.max(size, 1), 50);
 
-        // ⭐ ASC ORDER (small → big)
         Pageable pageable = PageRequest.of(safePage, safeSize, Sort.by("id").ascending());
 
         Specification<Product> spec = (root, query, cb) -> {
 
             List<Predicate> p = new ArrayList<>();
-
             p.add(cb.isFalse(root.get("deleted")));
 
             if (id != null)
@@ -105,11 +104,11 @@ public class ProductService {
             return cb.and(p.toArray(new Predicate[0]));
         };
 
-        return repo.findAll(spec, pageable)
-                .map(this::mapToResponse);
+        return repo.findAll(spec, pageable).map(this::mapToResponse);
     }
 
     // ================= UPDATE =================
+    @Transactional
     public ProductResponse updateProduct(Long productId,
             ProductUpdateRequest request,
             UserEntity user) {
@@ -157,6 +156,7 @@ public class ProductService {
     }
 
     // ================= DELETE =================
+    @Transactional
     public void deleteProduct(Long productId, UserEntity user) {
 
         validateUser(user);
@@ -179,6 +179,7 @@ public class ProductService {
     }
 
     // ================= REVIEW =================
+    @Transactional
     public ApiResponse<Product> addReview(Long productId,
             ProductReviewRequest request,
             UserEntity user) {
@@ -213,11 +214,15 @@ public class ProductService {
     }
 
     // ================= IMAGE =================
+    @Transactional
     public ApiResponse<ProductImage> uploadImage(Long productId,
             MultipartFile file,
             UserEntity user) {
 
         validateUser(user);
+
+        if (file == null || file.isEmpty())
+            return new ApiResponse<>(400, "File is required", null);
 
         Product product = repo.findById(productId).orElse(null);
         if (product == null)
@@ -228,6 +233,7 @@ public class ProductService {
             return new ApiResponse<>(403, "Not your product", null);
 
         try {
+            // store inside container folder
             String folder = "uploads/products/" + productId + "/";
             Files.createDirectories(Paths.get(folder));
 
@@ -236,7 +242,9 @@ public class ProductService {
             Files.write(path, file.getBytes());
 
             ProductImage image = new ProductImage();
-            image.setUrl("http://localhost:8080/" + folder + fileName);
+
+            // IMPORTANT: no localhost
+            image.setUrl("/" + folder + fileName);
             image.setProduct(product);
 
             return new ApiResponse<>(200, "Uploaded", imageRepo.save(image));

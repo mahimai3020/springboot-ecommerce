@@ -9,5 +9,6 @@ public class ProductUpdateRequest {
     private Double price;
     private Integer stock;
     private String category;
+    
 }
 

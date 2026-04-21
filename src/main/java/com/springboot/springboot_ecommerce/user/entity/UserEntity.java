@@ -157,4 +157,5 @@ public class UserEntity {
     public void setDeletedAt(LocalDateTime deletedAt) {
         this.deletedAt = deletedAt;
     }
+    
 }

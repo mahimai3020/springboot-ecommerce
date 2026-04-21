@@ -28,7 +28,7 @@ public class ProductController {
 
     private final ProductService service;
 
-    // ================= CREATE =================
+    //  CREATE 
     @PostMapping
     public ApiResponse<Product> create(
             @Valid @RequestBody ProductRequest request,
@@ -37,7 +37,7 @@ public class ProductController {
         return service.createProduct(request, user);
     }
 
-    // ================= GET ALL =================
+    //  GET ALL 
     @GetMapping
     public ApiResponse<Map<String, Object>> getAll(
             @AuthenticationPrincipal UserEntity user,
@@ -64,7 +64,8 @@ public class ProductController {
         return new ApiResponse<>(200, "Products fetched successfully", response);
     }
 
-    // ================= UPDATE =================
+    //  UPDATE 
+
     @PutMapping("/{id}")
     public ApiResponse<ProductResponse> update(
             @PathVariable Long id,
@@ -80,7 +81,7 @@ public class ProductController {
         return new ApiResponse<>(200, "Product updated successfully", product);
     }
 
-    // ================= UPLOAD IMAGE =================
+    //  UPLOAD IMAGE 
     @PostMapping("/{productId}/images")
     public ApiResponse<ProductImage> upload(
             @PathVariable Long productId,
@@ -94,7 +95,7 @@ public class ProductController {
         return service.uploadImage(productId, file, user);
     }
 
-    // ================= REVIEW =================
+    //  REVIEW 
     @PostMapping("/{productId}/reviews")
     public ApiResponse<Product> review(
             @PathVariable Long productId,
@@ -104,7 +105,7 @@ public class ProductController {
         return service.addReview(productId, request, user);
     }
 
-    // ================= DELETE =================
+    //  DELETE 
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(
             @PathVariable Long id,

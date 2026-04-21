@@ -10,6 +10,7 @@ import com.springboot.springboot_ecommerce.order.entity.Order;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
+    
     @Query("""
            SELECT o FROM Order o
            WHERE (:userId IS NULL OR o.userId = :userId)

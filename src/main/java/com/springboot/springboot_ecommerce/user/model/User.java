@@ -6,18 +6,18 @@ public class User {
     private String name;
     private String email;
 
-    // ✅ No-args constructor (REQUIRED)
+    //  No-args constructor (REQUIRED)
     public User() {
     }
 
-    // ✅ Parameterized constructor
+    //  Parameterized constructor
     public User(Long id, String name, String email) {
         this.id = id;
         this.name = name;
         this.email = email;
     }
 
-    // ✅ Getters & Setters
+    //  Getters & Setters
     public Long getId() {
         return id;
     }

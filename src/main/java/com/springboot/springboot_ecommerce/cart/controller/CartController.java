@@ -22,7 +22,7 @@ public class CartController {
         this.service = service;
     }
 
-    // ================= ADD TO CART =================
+    //  ADD TO CART 
     @PostMapping("/add")
     public ApiResponse<CartItem> addToCart(
             @AuthenticationPrincipal UserEntity user,
@@ -31,7 +31,7 @@ public class CartController {
         return service.addToCart(user, request);
     }
 
-    // ================= GET CART =================
+    //  GET CART 
     @GetMapping("/{cartId}")
     public ApiResponse<Cart> getCart(
             @PathVariable Long cartId,
@@ -40,7 +40,8 @@ public class CartController {
         return service.getCartById(cartId, user);
     }
 
-    // ================= CANCEL CART =================
+    //  CANCEL CART 
+
     @DeleteMapping("/cancel/{cartId}")
     public ApiResponse<Cart> cancel(
             @PathVariable Long cartId,

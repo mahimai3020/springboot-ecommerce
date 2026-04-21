@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   db:
     image: mysql:8
@@ -5,11 +7,11 @@ services:
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: ecommerce
-      MYSQL_USER: app
-      MYSQL_PASSWORD: app
+      MYSQL_DATABASE: springboot_ecommerce_db # ✅ FIXED
+      MYSQL_USER: mahimai # ✅ FIXED
+      MYSQL_PASSWORD: Mahimai@30012002 # ✅ FIXED
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
@@ -22,15 +24,15 @@ services:
     build: .
     container_name: ecommerce_app
     restart: always
-    ports:
-      - "8080:8080"
     depends_on:
       db:
         condition: service_healthy
+    ports:
+      - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/ecommerce?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
-      SPRING_DATASOURCE_USERNAME: app
-      SPRING_DATASOURCE_PASSWORD: app
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/springboot_ecommerce_db?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: mahimai
+      SPRING_DATASOURCE_PASSWORD: Mahimai@30012002
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_JPA_SHOW_SQL: "true"
 

@@ -7,4 +7,5 @@ public class ProductReviewRequest {
 
     private Integer rating;
     private String comment;
+    
 }

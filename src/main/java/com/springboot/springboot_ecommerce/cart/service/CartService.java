@@ -28,7 +28,7 @@ public class CartService {
         this.productRepo = productRepo;
     }
 
-    // ================= ADD TO CART =================
+    //  ADD TO CART 
     @Transactional
     public ApiResponse<CartItem> addToCart(UserEntity user, CartAddRequest request) {
 
@@ -93,7 +93,8 @@ public class CartService {
         return new ApiResponse<>(200, "Product added to cart successfully", savedItem);
     }
 
-    // ================= GET CART =================
+    //  GET CART 
+
     public ApiResponse<Cart> getCartById(Long cartId, UserEntity user) {
 
         if (user == null) {
@@ -121,7 +122,7 @@ public class CartService {
         return new ApiResponse<>(403, "Access denied", null);
     }
 
-    // ================= CANCEL CART =================
+    //  CANCEL CART 
     @Transactional
     public ApiResponse<Cart> cancelCart(Long cartId, UserEntity user) {
 

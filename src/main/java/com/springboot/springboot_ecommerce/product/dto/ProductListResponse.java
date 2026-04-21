@@ -10,5 +10,6 @@ public class ProductListResponse {
 
     private String message;
     private List<ProductResponse> products;
+    
 }
 

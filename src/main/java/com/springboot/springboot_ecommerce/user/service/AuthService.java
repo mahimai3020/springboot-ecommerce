@@ -24,9 +24,8 @@ public class AuthService {
     @Autowired
     private JwtUtil jwtUtil;
 
-    // ===============================
     // LOGIN
-    // ===============================
+
     public UserEntity login(String usernameOrEmail, String password) {
 
         if (usernameOrEmail == null || usernameOrEmail.trim().isEmpty()
@@ -60,9 +59,8 @@ public class AuthService {
         return user;
     }
 
-    // ===============================
     // LOGOUT
-    // ===============================
+
     public void logout(Long id, String token) {
 
         UserEntity user = repo.findById(id)
@@ -76,9 +74,9 @@ public class AuthService {
         repo.save(user);
     }
 
-    // ===============================
+  
     // RESET PASSWORD
-    // ===============================
+
     public void resetPassword(String email, String password, String confirmPassword) {
 
         if (email == null || email.trim().isEmpty()) {

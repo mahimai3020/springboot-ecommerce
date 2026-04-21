@@ -58,7 +58,8 @@ public class ProductService {
         return new ApiResponse<>(201, "Product created", repo.save(product));
     }
 
-    // ================= GET ALL =================
+    //  GET ALL 
+
     public Page<ProductResponse> getAllProducts(
             UserEntity user,
             Long id,
@@ -107,7 +108,7 @@ public class ProductService {
         return repo.findAll(spec, pageable).map(this::mapToResponse);
     }
 
-    // ================= UPDATE =================
+    // UPDATE 
     @Transactional
     public ProductResponse updateProduct(Long productId,
             ProductUpdateRequest request,
@@ -155,7 +156,7 @@ public class ProductService {
         return mapToResponse(repo.save(product));
     }
 
-    // ================= DELETE =================
+    //  DELETE 
     @Transactional
     public void deleteProduct(Long productId, UserEntity user) {
 
@@ -178,7 +179,7 @@ public class ProductService {
         repo.save(product);
     }
 
-    // ================= REVIEW =================
+    //  REVIEW 
     @Transactional
     public ApiResponse<Product> addReview(Long productId,
             ProductReviewRequest request,
@@ -213,7 +214,7 @@ public class ProductService {
         return new ApiResponse<>(200, "Review added", product);
     }
 
-    // ================= IMAGE =================
+    //  IMAGE 
     @Transactional
     public ApiResponse<ProductImage> uploadImage(Long productId,
             MultipartFile file,
@@ -254,7 +255,7 @@ public class ProductService {
         }
     }
 
-    // ================= COMMON =================
+    // COMMON 
     private void validateUser(UserEntity user) {
         if (user == null)
             throw new AccessDeniedException("Please login again");

@@ -9,4 +9,5 @@ public class ProductUpdateResponse {
 
     private String message;
     private ProductResponse product;
+    
 }

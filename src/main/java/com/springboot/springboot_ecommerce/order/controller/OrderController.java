@@ -25,14 +25,14 @@ public class OrderController {
         this.service = service;
     }
 
-    // ================= CHECKOUT =================
+    //  CHECKOUT 
     @PostMapping("/checkout")
     public ApiResponse<Order> checkout(
             @AuthenticationPrincipal UserEntity user) {
         return service.checkout(user);
     }
 
-    // ================= ASSIGN DELIVERY =================
+    // ASSIGN DELIVERY
     @PutMapping("/{orderId}/assign-delivery")
     public ApiResponse<Order> assignDelivery(
             @PathVariable Long orderId,
@@ -42,7 +42,7 @@ public class OrderController {
         return service.assignDelivery(orderId, request, user);
     }
 
-    // ================= SEARCH =================
+    //  SEARCH 
     @GetMapping("/search")
     public ApiResponse<List<Order>> search(
             @RequestParam(required = false) Long userId,
@@ -52,7 +52,8 @@ public class OrderController {
         return service.searchOrders(userId, status, user);
     }
 
-    // ================= PAY =================
+    //  PAY 
+
     @PostMapping("/{orderId}/pay")
     public ApiResponse<Order> pay(
             @PathVariable Long orderId,
@@ -62,7 +63,7 @@ public class OrderController {
         return service.pay(orderId, request, user);
     }
 
-    // ================= RETRY PAYMENT =================
+    //  RETRY PAYMENT 
     @PostMapping("/{orderId}/retry-payment")
     public ApiResponse<Order> retry(
             @PathVariable Long orderId,
@@ -72,7 +73,7 @@ public class OrderController {
         return service.retryPayment(orderId, request, user);
     }
 
-    // ================= DELIVERY STATUS =================
+    //  DELIVERY STATUS 
     @PutMapping("/{orderId}/delivery-status")
     public ApiResponse<Order> updateStatus(
             @PathVariable Long orderId,

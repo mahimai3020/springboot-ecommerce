@@ -8,4 +8,5 @@ import lombok.Data;
 public class ProductImageResponse {
     private Long id;
     private String url;
+    
 }

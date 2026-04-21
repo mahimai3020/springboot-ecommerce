@@ -37,7 +37,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/users/**").authenticated()
                         .anyRequest().permitAll())
 
-                // ⭐ BOTH 401 & 403 HANDLING
+                //  BOTH 401 & 403 HANDLING
+
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler))

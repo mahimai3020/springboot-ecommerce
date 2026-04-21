@@ -37,7 +37,7 @@ public class OrderService {
         this.productRepo = productRepo;
     }
 
-    // ================= SEARCH (ADMIN) =================
+    // SEARCH (ADMIN) 
     public ApiResponse<List<Order>> searchOrders(
             Long userId,
             String status,
@@ -57,7 +57,7 @@ public class OrderService {
         return new ApiResponse<>(200, "Orders fetched successfully", orders);
     }
 
-    // ================= CHECKOUT =================
+    //  CHECKOUT
     @Transactional
     public ApiResponse<Order> checkout(UserEntity user) {
 
@@ -103,7 +103,7 @@ public class OrderService {
         return new ApiResponse<>(201, "Order placed successfully", saved);
     }
 
-    // ================= ASSIGN DELIVERY =================
+    //ASSIGN DELIVERY 
     @Transactional
     public ApiResponse<Order> assignDelivery(Long orderId,
             AssignDeliveryRequest request,
@@ -149,7 +149,8 @@ public class OrderService {
         return new ApiResponse<>(200, "Delivery assigned successfully", order);
     }
 
-    // ================= PAYMENT =================
+    //  PAYMENT 
+
     @Transactional
     public ApiResponse<Order> pay(Long orderId,
             PaymentRequest request,
@@ -189,7 +190,7 @@ public class OrderService {
         return new ApiResponse<>(200, "Payment processed", order);
     }
 
-    // ================= RETRY =================
+    //  RETRY 
     public ApiResponse<Order> retryPayment(Long orderId,
             PaymentRequest request,
             UserEntity user) {
@@ -215,7 +216,7 @@ public class OrderService {
         return pay(orderId, request, user);
     }
 
-    // ================= DELIVERY STATUS =================
+    //  DELIVERY STATUS 
     @Transactional
     public ApiResponse<Order> updateDeliveryStatus(Long orderId,
             DeliveryStatusRequest request,

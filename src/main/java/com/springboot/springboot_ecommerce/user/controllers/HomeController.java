@@ -18,5 +18,4 @@ public class HomeController {
     public String getdashboardpage() {
         return "Login Sucessfully";
     }
-
 }

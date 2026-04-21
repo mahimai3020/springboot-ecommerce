@@ -40,7 +40,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 UserEntity user = repo.findByEmail(email).orElse(null);
 
-                // ✅ MUST CHECK
+                //  MUST CHECK
+
                 if (user != null && token.equals(user.getToken())) {
 
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(

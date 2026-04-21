@@ -25,6 +25,7 @@ public class ProductReview {
     @ManyToOne
     @JoinColumn(name = "product_id")
     private Product product;
+    
 }
 
 
